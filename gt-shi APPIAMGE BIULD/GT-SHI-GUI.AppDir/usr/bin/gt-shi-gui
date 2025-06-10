@@ -1,0 +1,420 @@
+#!/bin/bash
+
+# GT-SHI (GNUTUX-SYSTEM HARDWARE INFO)
+# نظام معلومات العتاد والنظام
+# Zenity GUI Version / نسخة الواجهة الرسومية
+
+# التحقق من وجود zenity
+if ! command -v zenity &> /dev/null; then
+    echo "Zenity is not installed. Please install it first:"
+    echo "Ubuntu/Debian: sudo apt install zenity"
+    echo "Fedora: sudo dnf install zenity"
+    echo "Arch: sudo pacman -S zenity"
+    exit 1
+fi
+
+# تحديد اللغة الافتراضية
+LANG_SETTING="en"
+
+# النصوص باللغتين
+declare -A TEXTS_EN
+declare -A TEXTS_AR
+
+# النصوص الإنجليزية
+TEXTS_EN[title]="GT-SHI - System & Hardware Information"
+TEXTS_EN[menu_title]="Main Menu - Select an option:"
+TEXTS_EN[menu_system]="System Information"
+TEXTS_EN[menu_hardware]="Hardware Information"
+TEXTS_EN[menu_memory]="Memory Information"
+TEXTS_EN[menu_storage]="Storage Information"
+TEXTS_EN[menu_network]="Network Information"
+TEXTS_EN[menu_process]="Process Information"
+TEXTS_EN[menu_report]="Generate Complete Report"
+TEXTS_EN[menu_language]="Change Language"
+TEXTS_EN[sys_info_title]="System Information"
+TEXTS_EN[hw_info_title]="Hardware Information"
+TEXTS_EN[mem_info_title]="Memory Information"
+TEXTS_EN[storage_info_title]="Storage Information"
+TEXTS_EN[net_info_title]="Network Information"
+TEXTS_EN[proc_info_title]="Process Information"
+TEXTS_EN[report_title]="Complete System Report"
+TEXTS_EN[lang_title]="Language Selection"
+TEXTS_EN[lang_text]="Choose your preferred language:"
+TEXTS_EN[report_saved]="Report Saved Successfully"
+TEXTS_EN[report_location]="Report has been saved to:\n\n"
+TEXTS_EN[error_title]="Error"
+TEXTS_EN[info_title]="Information"
+TEXTS_EN[generating_report]="Generating complete system report...\nThis may take a few moments."
+
+# النصوص العربية
+TEXTS_AR[title]="GT-SHI - معلومات النظام والعتاد"
+TEXTS_AR[menu_title]="القائمة الرئيسية - اختر خياراً:"
+TEXTS_AR[menu_system]="معلومات النظام"
+TEXTS_AR[menu_hardware]="معلومات العتاد"
+TEXTS_AR[menu_memory]="معلومات الذاكرة"
+TEXTS_AR[menu_storage]="معلومات التخزين"
+TEXTS_AR[menu_network]="معلومات الشبكة"
+TEXTS_AR[menu_process]="معلومات العمليات"
+TEXTS_AR[menu_report]="إنشاء تقرير شامل"
+TEXTS_AR[menu_language]="تغيير اللغة"
+TEXTS_AR[sys_info_title]="معلومات النظام"
+TEXTS_AR[hw_info_title]="معلومات العتاد"
+TEXTS_AR[mem_info_title]="معلومات الذاكرة"
+TEXTS_AR[storage_info_title]="معلومات التخزين"
+TEXTS_AR[net_info_title]="معلومات الشبكة"
+TEXTS_AR[proc_info_title]="معلومات العمليات"
+TEXTS_AR[report_title]="تقرير شامل للنظام"
+TEXTS_AR[lang_title]="اختيار اللغة"
+TEXTS_AR[lang_text]="اختر اللغة المفضلة:"
+TEXTS_AR[report_saved]="تم حفظ التقرير بنجاح"
+TEXTS_AR[report_location]="تم حفظ التقرير في:\n\n"
+TEXTS_AR[error_title]="خطأ"
+TEXTS_AR[info_title]="معلومات"
+TEXTS_AR[generating_report]="جاري إنشاء التقرير الشامل...\nقد يستغرق هذا بعض الوقت."
+
+# دالة الحصول على النص حسب اللغة
+get_text() {
+    local key=$1
+    if [ "$LANG_SETTING" = "ar" ]; then
+        echo "${TEXTS_AR[$key]}"
+    else
+        echo "${TEXTS_EN[$key]}"
+    fi
+}
+
+# دالة جمع معلومات النظام
+get_system_info() {
+    local info=""
+    info+="=== OPERATING SYSTEM ===\n"
+    info+="Distribution: $(lsb_release -d 2>/dev/null | cut -f2 || cat /etc/os-release | grep PRETTY_NAME | cut -d'"' -f2)\n"
+    info+="Kernel Version: $(uname -r)\n"
+    info+="Architecture: $(uname -m)\n"
+    info+="Hostname: $(hostname)\n"
+    info+="Uptime: $(uptime -p 2>/dev/null || uptime)\n\n"
+
+    info+="=== USER INFORMATION ===\n"
+    info+="Current User: $(whoami)\n"
+    info+="Shell: $SHELL\n"
+    info+="Home Directory: $HOME\n\n"
+
+    info+="=== DATE & TIME ===\n"
+    info+="Current Time: $(date)\n"
+    info+="Timezone: $(timedatectl show --property=Timezone --value 2>/dev/null || date +%Z)\n"
+
+    echo -e "$info"
+}
+
+# دالة جمع معلومات العتاد
+get_hardware_info() {
+    local info=""
+    info+="=== CPU INFORMATION ===\n"
+    if command -v lscpu &> /dev/null; then
+        info+="Model: $(lscpu | grep "Model name" | cut -d':' -f2 | xargs)\n"
+        info+="Cores: $(lscpu | grep "^CPU(s):" | cut -d':' -f2 | xargs)\n"
+        info+="Architecture: $(lscpu | grep "Architecture" | cut -d':' -f2 | xargs)\n"
+        info+="Max MHz: $(lscpu | grep "CPU max MHz" | cut -d':' -f2 | xargs 2>/dev/null || echo "N/A")\n"
+    else
+        info+="CPU Info: $(cat /proc/cpuinfo | grep "model name" | head -1 | cut -d':' -f2 | xargs)\n"
+    fi
+    info+="\n"
+
+    info+="=== GPU INFORMATION ===\n"
+    if command -v lspci &> /dev/null; then
+        while IFS= read -r line; do
+            info+="$line\n"
+        done < <(lspci | grep -i vga)
+        while IFS= read -r line; do
+            info+="$line\n"
+        done < <(lspci | grep -i 3d)
+    fi
+    info+="\n"
+
+    info+="=== USB DEVICES (Top 10) ===\n"
+    if command -v lsusb &> /dev/null; then
+        while IFS= read -r line; do
+            info+="$line\n"
+        done < <(lsusb | head -10)
+    fi
+
+    echo -e "$info"
+}
+
+# دالة جمع معلومات الذاكرة
+get_memory_info() {
+    local info=""
+    info+="=== RAM INFORMATION ===\n"
+    if command -v free &> /dev/null; then
+        info+="Total RAM: $(free -h | awk '/^Mem:/ {print $2}')\n"
+        info+="Used RAM: $(free -h | awk '/^Mem:/ {print $3}')\n"
+        info+="Free RAM: $(free -h | awk '/^Mem:/ {print $4}')\n"
+        info+="Available RAM: $(free -h | awk '/^Mem:/ {print $7}')\n"
+        info+="Swap Total: $(free -h | awk '/^Swap:/ {print $2}')\n"
+        info+="Swap Used: $(free -h | awk '/^Swap:/ {print $3}')\n"
+    fi
+    info+="\n"
+
+    info+="=== DETAILED MEMORY USAGE ===\n"
+    if command -v free &> /dev/null; then
+        while IFS= read -r line; do
+            info+="$line\n"
+        done < <(free -h)
+    fi
+
+    echo -e "$info"
+}
+
+# دالة جمع معلومات التخزين
+get_storage_info() {
+    local info=""
+    info+="=== DISK USAGE ===\n"
+    while IFS= read -r line; do
+        info+="$line\n"
+    done < <(df -h | grep -E "^/dev|^tmpfs")
+    info+="\n"
+
+    info+="=== BLOCK DEVICES ===\n"
+    if command -v lsblk &> /dev/null; then
+        while IFS= read -r line; do
+            info+="$line\n"
+        done < <(lsblk)
+    fi
+
+    echo -e "$info"
+}
+
+# دالة جمع معلومات الشبكة
+get_network_info() {
+    local info=""
+    info+="=== NETWORK INTERFACES ===\n"
+    if command -v ip &> /dev/null; then
+        while IFS= read -r line; do
+            info+="$line\n"
+        done < <(ip addr show | grep -E "^[0-9]|inet ")
+    else
+        while IFS= read -r line; do
+            info+="$line\n"
+        done < <(ifconfig | grep -E "^[a-z]|inet ")
+    fi
+    info+="\n"
+
+    info+="=== NETWORK STATISTICS ===\n"
+    if command -v ss &> /dev/null; then
+        info+="Listening Ports: $(ss -tuln | wc -l)\n"
+        info+="Active Connections: $(ss -tu | wc -l)\n"
+    fi
+    info+="\n"
+
+    info+="=== ROUTING TABLE ===\n"
+    if command -v ip &> /dev/null; then
+        while IFS= read -r line; do
+            info+="$line\n"
+        done < <(ip route show | head -10)
+    fi
+
+    echo -e "$info"
+}
+
+# دالة جمع معلومات العمليات
+get_process_info() {
+    local info=""
+    info+="=== SYSTEM LOAD ===\n"
+    info+="Load Average: $(uptime | awk -F'load average:' '{print $2}')\n"
+    info+="Running Processes: $(ps aux | wc -l)\n\n"
+
+    info+="=== TOP CPU PROCESSES ===\n"
+    while IFS= read -r line; do
+        info+="$line\n"
+    done < <(ps aux --sort=-%cpu | head -6 | tail -5 | awk '{printf "%-10s %s %s %s\n", $1, $3"%", $4"%", $11}' 2>/dev/null)
+    info+="\n"
+
+    info+="=== TOP MEMORY PROCESSES ===\n"
+    while IFS= read -r line; do
+        info+="$line\n"
+    done < <(ps aux --sort=-%mem | head -6 | tail -5 | awk '{printf "%-10s %s %s %s\n", $1, $3"%", $4"%", $11}' 2>/dev/null)
+    info+="\n"
+
+    info+="=== SYSTEM SERVICES ===\n"
+    if command -v systemctl &> /dev/null; then
+        info+="Active Services: $(systemctl list-units --type=service --state=active | wc -l)\n"
+        info+="Failed Services: $(systemctl list-units --type=service --state=failed | wc -l)\n"
+    fi
+
+    echo -e "$info"
+}
+
+# دالة إنشاء التقرير الشامل
+generate_complete_report() {
+local report_dir="$HOME/GT-SHI-Reports"
+mkdir -p "$report_dir"
+local report_file="$report_dir/gt-shi-report-$(date +%Y%m%d_%H%M%S).txt"
+    # إظهار نافذة التقدم
+    (
+        echo "10"
+        echo "# Collecting system information..."
+        sleep 1
+
+        echo "20"
+        echo "# Collecting hardware information..."
+        sleep 1
+
+        echo "40"
+        echo "# Collecting memory information..."
+        sleep 1
+
+        echo "60"
+        echo "# Collecting storage information..."
+        sleep 1
+
+        echo "80"
+        echo "# Collecting network information..."
+        sleep 1
+
+        echo "90"
+        echo "# Collecting process information..."
+        sleep 1
+
+        echo "100"
+        echo "# Generating report file..."
+        sleep 1
+    ) | zenity --progress --title="$(get_text generating_report)" --text="$(get_text generating_report)" --percentage=0 --auto-close
+
+    # إنشاء التقرير
+    {
+        echo "GT-SHI - Complete System Report"
+        echo "Generated on: $(date)"
+        echo "======================================="
+        echo
+
+        echo "SYSTEM INFORMATION"
+        echo "=================="
+        get_system_info
+        echo
+
+        echo "HARDWARE INFORMATION"
+        echo "==================="
+        get_hardware_info
+        echo
+
+        echo "MEMORY INFORMATION"
+        echo "=================="
+        get_memory_info
+        echo
+
+        echo "STORAGE INFORMATION"
+        echo "==================="
+        get_storage_info
+        echo
+
+        echo "NETWORK INFORMATION"
+        echo "==================="
+        get_network_info
+        echo
+
+        echo "PROCESS INFORMATION"
+        echo "==================="
+        get_process_info
+        echo
+
+    } > "$report_file"
+
+    # إظهار رسالة النجاح
+    zenity --info --title="$(get_text report_saved)" --text="$(get_text report_location)$(pwd)/$report_file" --width=400
+
+    # سؤال المستخدم إذا كان يريد فتح التقرير
+    if zenity --question --title="$(get_text info_title)" --text="Do you want to open the report file?\nهل تريد فتح ملف التقرير؟" --width=300; then
+        if command -v xdg-open &> /dev/null; then
+            xdg-open "$report_file"
+        elif command -v gedit &> /dev/null; then
+            gedit "$report_file"
+        elif command -v nano &> /dev/null; then
+            gnome-terminal -- nano "$report_file"
+        fi
+    fi
+}
+
+# دالة تغيير اللغة
+change_language() {
+    local choice
+    choice=$(zenity --list --title="$(get_text lang_title)" --text="$(get_text lang_text)" --column="Language/اللغة" --column="Code" --hide-column=2 "English" "en" "العربية" "ar" --width=300 --height=200)
+
+    if [ -n "$choice" ]; then
+        case $choice in
+            "English") LANG_SETTING="en" ;;
+            "العربية") LANG_SETTING="ar" ;;
+        esac
+        zenity --info --title="$(get_text info_title)" --text="Language changed successfully!\nتم تغيير اللغة بنجاح!" --width=300
+    fi
+}
+
+# دالة إظهار المعلومات في نافذة
+show_info_window() {
+    local title="$1"
+    local info="$2"
+
+    zenity --text-info --title="$title" --width=800 --height=600 --filename=<(echo -e "$info") --font="monospace 10"
+}
+
+# دالة القائمة الرئيسية
+show_main_menu() {
+    local choice
+    choice=$(zenity --list --title="$(get_text title)" --text="$(get_text menu_title)" --column="Options" --width=400 --height=350 \
+        "$(get_text menu_system)" \
+        "$(get_text menu_hardware)" \
+        "$(get_text menu_memory)" \
+        "$(get_text menu_storage)" \
+        "$(get_text menu_network)" \
+        "$(get_text menu_process)" \
+        "$(get_text menu_report)" \
+        "$(get_text menu_language)")
+
+    case "$choice" in
+        "$(get_text menu_system)"|"معلومات النظام")
+            show_info_window "$(get_text sys_info_title)" "$(get_system_info)"
+            ;;
+        "$(get_text menu_hardware)"|"معلومات العتاد")
+            show_info_window "$(get_text hw_info_title)" "$(get_hardware_info)"
+            ;;
+        "$(get_text menu_memory)"|"معلومات الذاكرة")
+            show_info_window "$(get_text mem_info_title)" "$(get_memory_info)"
+            ;;
+        "$(get_text menu_storage)"|"معلومات التخزين")
+            show_info_window "$(get_text storage_info_title)" "$(get_storage_info)"
+            ;;
+        "$(get_text menu_network)"|"معلومات الشبكة")
+            show_info_window "$(get_text net_info_title)" "$(get_network_info)"
+            ;;
+        "$(get_text menu_process)"|"معلومات العمليات")
+            show_info_window "$(get_text proc_info_title)" "$(get_process_info)"
+            ;;
+        "$(get_text menu_report)"|"إنشاء تقرير شامل")
+            generate_complete_report
+            ;;
+        "$(get_text menu_language)"|"تغيير اللغة")
+            change_language
+            ;;
+        *)
+            exit 0
+            ;;
+    esac
+}
+
+# الحلقة الرئيسية
+main() {
+    while true; do
+        show_main_menu
+
+        # سؤال المستخدم إذا كان يريد المتابعة
+        if ! zenity --question --title="$(get_text title)" --text="Continue using GT-SHI?\nالمتابعة في استخدام GT-SHI؟" --width=300; then
+            zenity --info --title="$(get_text title)" --text="Thank you for using GT-SHI!\nشكراً لاستخدام GT-SHI!" --width=300
+            break
+        fi
+    done
+}
+
+# التحقق من الصلاحيات والبدء
+if [ "$EUID" -eq 0 ]; then
+    zenity --info --title="Root Access" --text="Running as root - Full hardware access available\nيعمل كمدير - الوصول الكامل للعتاد متاح" --width=350
+fi
+
+# بدء البرنامج
+main

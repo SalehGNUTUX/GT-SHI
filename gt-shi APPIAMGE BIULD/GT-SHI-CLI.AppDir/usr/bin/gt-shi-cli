@@ -1,0 +1,429 @@
+#!/bin/bash
+
+# GT-SHI (GNUTUX-SYSTEM HARDWARE INFO)
+# نظام معلومات العتاد والنظام
+# Terminal Version / نسخة الطرفية
+
+# تحديد اللغة الافتراضية
+LANG_SETTING="en"
+
+# الألوان
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+WHITE='\033[1;37m'
+NC='\033[0m' # No Color
+BOLD='\033[1m'
+
+# النصوص باللغتين
+declare -A TEXTS_EN
+declare -A TEXTS_AR
+
+# النصوص الإنجليزية
+TEXTS_EN[title]="GNUTUX-SYSTEM HARDWARE INFO"
+TEXTS_EN[menu_title]="=== MAIN MENU ==="
+TEXTS_EN[menu_1]="1. System Information"
+TEXTS_EN[menu_2]="2. Hardware Information"
+TEXTS_EN[menu_3]="3. Memory Information"
+TEXTS_EN[menu_4]="4. Storage Information"
+TEXTS_EN[menu_5]="5. Network Information"
+TEXTS_EN[menu_6]="6. Process Information"
+TEXTS_EN[menu_7]="7. Complete Report"
+TEXTS_EN[menu_8]="8. Change Language"
+TEXTS_EN[menu_9]="9. Exit"
+TEXTS_EN[choice]="Enter your choice (1-9): "
+TEXTS_EN[invalid]="Invalid choice! Please try again."
+TEXTS_EN[press_enter]="Press Enter to continue..."
+TEXTS_EN[generating]="Generating report..."
+TEXTS_EN[lang_changed]="Language changed successfully!"
+TEXTS_EN[sys_info]="=== SYSTEM INFORMATION ==="
+TEXTS_EN[hw_info]="=== HARDWARE INFORMATION ==="
+TEXTS_EN[mem_info]="=== MEMORY INFORMATION ==="
+TEXTS_EN[storage_info]="=== STORAGE INFORMATION ==="
+TEXTS_EN[net_info]="=== NETWORK INFORMATION ==="
+TEXTS_EN[proc_info]="=== PROCESS INFORMATION ==="
+TEXTS_EN[complete_report]="=== COMPLETE SYSTEM REPORT ==="
+
+# النصوص العربية
+TEXTS_AR[title]="GNUTUX-معلومات عتاد النظام"
+TEXTS_AR[menu_title]="=== القائمة الرئيسية ==="
+TEXTS_AR[menu_1]="1. معلومات النظام"
+TEXTS_AR[menu_2]="2. معلومات العتاد"
+TEXTS_AR[menu_3]="3. معلومات الذاكرة"
+TEXTS_AR[menu_4]="4. معلومات التخزين"
+TEXTS_AR[menu_5]="5. معلومات الشبكة"
+TEXTS_AR[menu_6]="6. معلومات العمليات"
+TEXTS_AR[menu_7]="7. تقرير شامل"
+TEXTS_AR[menu_8]="8. تغيير اللغة"
+TEXTS_AR[menu_9]="9. خروج"
+TEXTS_AR[choice]="اختر من (1-9): "
+TEXTS_AR[invalid]="اختيار خاطئ! حاول مرة أخرى."
+TEXTS_AR[press_enter]="اضغط Enter للمتابعة..."
+TEXTS_AR[generating]="جاري إنشاء التقرير..."
+TEXTS_AR[lang_changed]="تم تغيير اللغة بنجاح!"
+TEXTS_AR[sys_info]="=== معلومات النظام ==="
+TEXTS_AR[hw_info]="=== معلومات العتاد ==="
+TEXTS_AR[mem_info]="=== معلومات الذاكرة ==="
+TEXTS_AR[storage_info]="=== معلومات التخزين ==="
+TEXTS_AR[net_info]="=== معلومات الشبكة ==="
+TEXTS_AR[proc_info]="=== معلومات العمليات ==="
+TEXTS_AR[complete_report]="=== تقرير شامل للنظام ==="
+
+# دالة الحصول على النص حسب اللغة
+get_text() {
+    local key=$1
+    if [ "$LANG_SETTING" = "ar" ]; then
+        echo "${TEXTS_AR[$key]}"
+    else
+        echo "${TEXTS_EN[$key]}"
+    fi
+}
+
+# دالة مسح الشاشة وإظهار العنوان
+clear_and_header() {
+    clear
+    echo -e "${CYAN}${BOLD}"
+
+    # عرض الشعار
+    echo "          _____                _____                    _____                    _____                    _____          "
+    echo "         /\\    \\              /\\    \\                  /\\    \\                  /\\    \\                  /\\    \\         "
+    echo "        /::\\    \\            /::\\    \\                /::\\    \\                /::\\____\\                /::\\    \\        "
+    echo "       /::::\\    \\           \\:::\\    \\              /::::\\    \\              /:::/    /                \\:::\\    \\       "
+    echo "      /::::::\\    \\           \\:::\\    \\            /::::::\\    \\            /:::/    /                  \\:::\\    \\      "
+    echo "     /:::/\\:::\\    \\           \\:::\\    \\          /:::/\\:::\\    \\          /:::/    /                    \\:::\\    \\     "
+    echo "    /:::/  \\:::\\    \\           \\:::\\    \\        /:::/__\\:::\\    \\        /:::/____/                      \\:::\\    \\    "
+    echo "   /:::/    \\:::\\    \\          /::::\\    \\       \\:::\\   \\:::\\    \\      /::::\\    \\                      /::::\\    \\   "
+    echo "  /:::/    / \\:::\\    \\        /::::::\\    \\    ___\\:::\\   \\:::\\    \\    /::::::\\    \\   _____    ____    /::::::\\    \\  "
+    echo " /:::/    /   \\::::\\ ___\\      /:::/\\:::\\    \\  /\\   \\:::\\   \\:::\\    \\  /:::/\\:::\\    \\ /\\    \\  /\\   \\  /:::/\\:::\\    \\ "
+    echo "/:::/____/  ___\\:::|    |    /:::/  \\:::\\____\\/::\\   \\:::\\   \\:::\\____\\/:::/  \\:::\\    /::\\____\\/::\\   \\/:::/  \\:::\\____\\"
+    echo "\\:::\\    \\ /\\  /:::|____|   /:::/    \\::/    /\\:::\\   \\:::\\   \\::/    /\\::/    \\:::\\  /:::/    /\\:::\\  /:::/    \\::/    /"
+    echo " \\:::\\    /:::\\ \\::/    /   /:::/    / \\/____/  \\:::\\   \\:::\\   \\/____/  \\/____/ \\:::\\/:::/    /  \\:::\\/:::/    / \\/____/ "
+    echo "  \\:::\\   \\::::\\ \\/____/   /:::/    /            \\:::\\   \\:::\\    \\               \\::::::/    /    \\::::::/    /          "
+    echo "   \\:::\\   \\:::\\____\\    /:::/    /              \\:::\\   \\:::\\____\\               \\::::/    /      \\::::/____/           "
+    echo "    \\:::\\  /:::/    /    \\::/    /                \\:::\\  /:::/    /               /:::/    /        \\:::\\    \\           "
+    echo "     \\:::\\/:::/    /      \\/____/                  \\:::\\/:::/    /               /:::/    /          \\:::\\    \\          "
+    echo "      \\::::::/    /                                 \\::::::/    /               /:::/    /            \\:::\\    \\         "
+    echo "       \\::::/    /                                   \\::::/    /               /:::/    /              \\:::\\____\\        "
+    echo "        \\::/____/                                     \\::/    /                \\::/    /                \\::/    /        "
+    echo "                                                       \\/____/                  \\/____/                  \\/____/         "
+    echo "                                                                                                                         "
+
+    echo -e "${NC}"
+    echo -e "${GREEN}${BOLD}                                           BY GNUTUX${NC}"
+    echo
+    echo -e "${YELLOW}${BOLD}                              $(get_text title)${NC}"
+    echo
+}
+
+# دالة معلومات النظام
+show_system_info() {
+    clear_and_header
+    echo -e "${GREEN}$(get_text sys_info)${NC}"
+    echo
+
+    echo -e "${YELLOW}OS Information:${NC}"
+    echo "• Distribution: $(lsb_release -d 2>/dev/null | cut -f2 || cat /etc/os-release | grep PRETTY_NAME | cut -d'"' -f2)"
+    echo "• Kernel: $(uname -r)"
+    echo "• Architecture: $(uname -m)"
+    echo "• Hostname: $(hostname)"
+    echo "• Uptime: $(uptime -p 2>/dev/null || uptime)"
+    echo
+
+    echo -e "${YELLOW}User Information:${NC}"
+    echo "• Current User: $(whoami)"
+    echo "• Shell: $SHELL"
+    echo "• Home Directory: $HOME"
+    echo "• Current Directory: $(pwd)"
+    echo
+
+    echo -e "${YELLOW}Date & Time:${NC}"
+    echo "• Current Time: $(date)"
+    echo "• Timezone: $(timedatectl show --property=Timezone --value 2>/dev/null || date +%Z)"
+    echo
+}
+
+# دالة معلومات العتاد
+show_hardware_info() {
+    clear_and_header
+    echo -e "${GREEN}$(get_text hw_info)${NC}"
+    echo
+
+    echo -e "${YELLOW}CPU Information:${NC}"
+    if command -v lscpu &> /dev/null; then
+        echo "• Model: $(lscpu | grep "Model name" | cut -d':' -f2 | xargs)"
+        echo "• Cores: $(lscpu | grep "^CPU(s):" | cut -d':' -f2 | xargs)"
+        echo "• Architecture: $(lscpu | grep "Architecture" | cut -d':' -f2 | xargs)"
+        echo "• Max MHz: $(lscpu | grep "CPU max MHz" | cut -d':' -f2 | xargs 2>/dev/null || echo "N/A")"
+    else
+        echo "• CPU Info: $(cat /proc/cpuinfo | grep "model name" | head -1 | cut -d':' -f2 | xargs)"
+    fi
+    echo
+
+    echo -e "${YELLOW}GPU Information:${NC}"
+    if command -v lspci &> /dev/null; then
+        lspci | grep -i vga | sed 's/^/• /'
+        lspci | grep -i 3d | sed 's/^/• /'
+    fi
+    echo
+
+    echo -e "${YELLOW}USB Devices:${NC}"
+    if command -v lsusb &> /dev/null; then
+        lsusb | head -5 | sed 's/^/• /'
+        [ $(lsusb | wc -l) -gt 5 ] && echo "• ... and $(( $(lsusb | wc -l) - 5 )) more devices"
+    fi
+    echo
+}
+
+# دالة معلومات الذاكرة
+show_memory_info() {
+    clear_and_header
+    echo -e "${GREEN}$(get_text mem_info)${NC}"
+    echo
+
+    echo -e "${YELLOW}RAM Information:${NC}"
+    if command -v free &> /dev/null; then
+        free -h | grep -E "^Mem|^Swap" | while read line; do
+            echo "• $line"
+        done
+    fi
+    echo
+
+    echo -e "${YELLOW}Memory Usage:${NC}"
+    echo "• Total RAM: $(free -h | awk '/^Mem:/ {print $2}')"
+    echo "• Used RAM: $(free -h | awk '/^Mem:/ {print $3}')"
+    echo "• Free RAM: $(free -h | awk '/^Mem:/ {print $4}')"
+    echo "• Available RAM: $(free -h | awk '/^Mem:/ {print $7}')"
+    echo
+
+    if command -v dmidecode &> /dev/null && [ "$EUID" -eq 0 ]; then
+        echo -e "${YELLOW}RAM Details (requires root):${NC}"
+        dmidecode -t memory | grep -E "Size|Speed|Type:" | head -10 | sed 's/^/• /'
+    fi
+    echo
+}
+
+# دالة معلومات التخزين
+show_storage_info() {
+    clear_and_header
+    echo -e "${GREEN}$(get_text storage_info)${NC}"
+    echo
+
+    echo -e "${YELLOW}Disk Usage:${NC}"
+    df -h | grep -E "^/dev|^tmpfs" | head -10 | while read line; do
+        echo "• $line"
+    done
+    echo
+
+    echo -e "${YELLOW}Block Devices:${NC}"
+    if command -v lsblk &> /dev/null; then
+        lsblk | sed 's/^/• /'
+    fi
+    echo
+
+    echo -e "${YELLOW}Storage Devices:${NC}"
+    if [ -d /dev/disk/by-id ]; then
+        ls -la /dev/disk/by-id/ | grep -v "part" | head -5 | sed 's/^/• /'
+    fi
+    echo
+}
+
+# دالة معلومات الشبكة
+show_network_info() {
+    clear_and_header
+    echo -e "${GREEN}$(get_text net_info)${NC}"
+    echo
+
+    echo -e "${YELLOW}Network Interfaces:${NC}"
+    if command -v ip &> /dev/null; then
+        ip addr show | grep -E "^[0-9]|inet " | sed 's/^/• /'
+    else
+        ifconfig | grep -E "^[a-z]|inet " | sed 's/^/• /'
+    fi
+    echo
+
+    echo -e "${YELLOW}Network Statistics:${NC}"
+    if command -v ss &> /dev/null; then
+        echo "• Listening ports: $(ss -tuln | wc -l)"
+        echo "• Active connections: $(ss -tu | wc -l)"
+    fi
+    echo
+
+    echo -e "${YELLOW}WiFi Information:${NC}"
+    if command -v iwconfig &> /dev/null; then
+        iwconfig 2>/dev/null | grep -E "ESSID|Quality" | sed 's/^/• /'
+    fi
+    echo
+}
+
+# دالة معلومات العمليات
+show_process_info() {
+    clear_and_header
+    echo -e "${GREEN}$(get_text proc_info)${NC}"
+    echo
+
+    echo -e "${YELLOW}System Load:${NC}"
+    echo "• Load Average: $(uptime | awk -F'load average:' '{print $2}')"
+    echo "• Running Processes: $(ps aux | wc -l)"
+    echo
+
+    echo -e "${YELLOW}Top CPU Processes:${NC}"
+    ps aux --sort=-%cpu | head -6 | tail -5 | awk '{printf "• %-10s %s %s %s\n", $1, $3"%", $4"%", $11}' 2>/dev/null
+    echo
+
+    echo -e "${YELLOW}Top Memory Processes:${NC}"
+    ps aux --sort=-%mem | head -6 | tail -5 | awk '{printf "• %-10s %s %s %s\n", $1, $3"%", $4"%", $11}' 2>/dev/null
+    echo
+
+    echo -e "${YELLOW}System Services:${NC}"
+    if command -v systemctl &> /dev/null; then
+        echo "• Active services: $(systemctl list-units --type=service --state=active | wc -l)"
+        echo "• Failed services: $(systemctl list-units --type=service --state=failed | wc -l)"
+    fi
+    echo
+}
+
+# دالة التقرير الشامل
+show_complete_report() {
+    clear_and_header
+    echo -e "${GREEN}$(get_text complete_report)${NC}"
+    echo -e "${YELLOW}$(get_text generating)${NC}"
+    echo
+
+    # حفظ التقرير في ملف
+    REPORT_DIR="$HOME/GT-SHI-Reports"
+mkdir -p "$REPORT_DIR"
+REPORT_FILE="$REPORT_DIR/gt-shi-report-$(date +%Y%m%d_%H%M%S).txt"
+
+    {
+        echo "GT-SHI - Complete System Report"
+        echo "Generated on: $(date)"
+        echo "================================"
+        echo
+
+        echo "SYSTEM INFORMATION"
+        echo "=================="
+        echo "Distribution: $(lsb_release -d 2>/dev/null | cut -f2 || cat /etc/os-release | grep PRETTY_NAME | cut -d'"' -f2)"
+        echo "Kernel: $(uname -r)"
+        echo "Architecture: $(uname -m)"
+        echo "Hostname: $(hostname)"
+        echo "Uptime: $(uptime -p 2>/dev/null || uptime)"
+        echo
+
+        echo "HARDWARE INFORMATION"
+        echo "==================="
+        if command -v lscpu &> /dev/null; then
+            echo "CPU: $(lscpu | grep "Model name" | cut -d':' -f2 | xargs)"
+            echo "Cores: $(lscpu | grep "^CPU(s):" | cut -d':' -f2 | xargs)"
+        fi
+        echo
+
+        echo "MEMORY INFORMATION"
+        echo "=================="
+        free -h
+        echo
+
+        echo "STORAGE INFORMATION"
+        echo "==================="
+        df -h
+        echo
+
+        echo "NETWORK INTERFACES"
+        echo "=================="
+        if command -v ip &> /dev/null; then
+            ip addr show
+        fi
+        echo
+
+    } > "$REPORT_FILE"
+
+    echo -e "${GREEN}Report saved to: $REPORT_FILE${NC}"
+    echo
+    echo -e "${YELLOW}Report Preview:${NC}"
+    head -30 "$REPORT_FILE"
+    echo
+    echo -e "${CYAN}Full report saved in current directory${NC}"
+}
+
+# دالة تغيير اللغة
+change_language() {
+    clear_and_header
+    echo -e "${YELLOW}Select Language / اختر اللغة:${NC}"
+    echo
+    echo "1. English"
+    echo "2. العربية"
+    echo
+    read -p "Choice / الاختيار (1-2): " lang_choice
+
+    case $lang_choice in
+        1) LANG_SETTING="en" ;;
+        2) LANG_SETTING="ar" ;;
+        *) return ;;
+    esac
+
+    echo -e "${GREEN}$(get_text lang_changed)${NC}"
+    sleep 1
+}
+
+# دالة القائمة الرئيسية
+show_menu() {
+    clear_and_header
+    echo -e "${BLUE}$(get_text menu_title)${NC}"
+    echo
+    echo -e "${WHITE}$(get_text menu_1)${NC}"
+    echo -e "${WHITE}$(get_text menu_2)${NC}"
+    echo -e "${WHITE}$(get_text menu_3)${NC}"
+    echo -e "${WHITE}$(get_text menu_4)${NC}"
+    echo -e "${WHITE}$(get_text menu_5)${NC}"
+    echo -e "${WHITE}$(get_text menu_6)${NC}"
+    echo -e "${WHITE}$(get_text menu_7)${NC}"
+    echo -e "${CYAN}$(get_text menu_8)${NC}"
+    echo -e "${RED}$(get_text menu_9)${NC}"
+    echo
+}
+
+# دالة الانتظار
+wait_for_enter() {
+    echo
+    echo -e "${CYAN}$(get_text press_enter)${NC}"
+    read
+}
+
+# الحلقة الرئيسية
+main() {
+    while true; do
+        show_menu
+        read -p "$(get_text choice)" choice
+
+        case $choice in
+            1) show_system_info; wait_for_enter ;;
+            2) show_hardware_info; wait_for_enter ;;
+            3) show_memory_info; wait_for_enter ;;
+            4) show_storage_info; wait_for_enter ;;
+            5) show_network_info; wait_for_enter ;;
+            6) show_process_info; wait_for_enter ;;
+            7) show_complete_report; wait_for_enter ;;
+            8) change_language ;;
+            9)
+                clear_and_header
+                echo -e "${GREEN}Thank you for using GT-SHI! / شكراً لاستخدام GT-SHI!${NC}"
+                exit 0
+                ;;
+            *)
+                echo -e "${RED}$(get_text invalid)${NC}"
+                sleep 1
+                ;;
+        esac
+    done
+}
+
+# التحقق من الصلاحيات والبدء
+if [ "$EUID" -eq 0 ]; then
+    echo -e "${YELLOW}Running as root - Full hardware access available${NC}"
+    sleep 1
+fi
+
+# بدء البرنامج
+main

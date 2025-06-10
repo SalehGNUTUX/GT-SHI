@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=GT-SHI (CLI)
+Comment=GNUTUX System Hardware Information (Terminal Version)
+Exec=gt-shi-cli
+Icon=gt-shi-cli
+Terminal=true
+Type=Application
+Categories=System;Utility;
+Keywords=system;hardware;info;terminal;cli;

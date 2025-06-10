@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=GT-SHI (GUI)
+Comment=GNUTUX System Hardware Information (Graphical Version)
+Exec=gt-shi-gui
+Icon=gt-shi-gui
+Terminal=false
+Type=Application
+Categories=System;Utility;
+Keywords=system;hardware;info;graphical;gui;
